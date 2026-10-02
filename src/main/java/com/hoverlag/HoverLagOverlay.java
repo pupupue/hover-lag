@@ -13,6 +13,9 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
+import net.runelite.api.Perspective;
+import net.runelite.api.WorldView;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -28,9 +31,6 @@ class HoverLagOverlay extends Overlay
 	private static final Color IN_SYNC = new Color(0, 255, 0, 200);
 	private static final Color SCUFFED = new Color(255, 0, 0, 230);
 	private static final int RING = 6;
-	// The client's NPC clickbox reaches a few pixels past the model's convex hull, so a click that
-	// close to the hull still lands on the NPC.
-	private static final int CLICKBOX_SLACK = 6;
 
 	private final HoverLagPlugin plugin;
 	private final Client client;
@@ -101,9 +101,8 @@ class HoverLagOverlay extends Overlay
 		NPC aimed = top.getNpc();
 		if (aimed != null)
 		{
-			Shape hull = aimed.getConvexHull();
-			return hull != null && !hull.intersects(mouse.x - CLICKBOX_SLACK, mouse.y - CLICKBOX_SLACK,
-				CLICKBOX_SLACK * 2, CLICKBOX_SLACK * 2);
+			Shape box = clickbox(aimed);
+			return box != null && !box.contains(mouse);
 		}
 		if (top.getType() == MenuAction.WALK)
 		{
@@ -115,13 +114,29 @@ class HoverLagOverlay extends Overlay
 				{
 					continue;
 				}
-				Shape hull = npc.getConvexHull();
-				if (hull != null && hull.contains(mouse))
+				Shape box = clickbox(npc);
+				if (box != null && box.contains(mouse))
 				{
 					return true;
 				}
 			}
 		}
 		return false;
+	}
+
+	// The area the client hit-tests the NPC's model against: its bounding box for models that use
+	// one, otherwise each face's screen bounds padded by a few pixels. Placed the way the client
+	// places the NPC's convex hull.
+	private Shape clickbox(NPC npc)
+	{
+		LocalPoint lp = npc.getLocalLocation();
+		WorldView wv = npc.getWorldView();
+		if (lp == null || wv == null)
+		{
+			return null;
+		}
+		int z = Perspective.getFootprintTileHeight(client, lp, wv.getPlane(), npc.getFootprintSize())
+			- npc.getAnimationHeightOffset();
+		return Perspective.getClickbox(client, wv, npc.getModel(), npc.getCurrentOrientation(), lp.getX(), lp.getY(), z);
 	}
 }
