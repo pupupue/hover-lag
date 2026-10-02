@@ -45,8 +45,8 @@ public class HoverLagPlugin extends Plugin
 	// Client thread only (written before each frame, read by the overlay while drawing it).
 	// Canvas position the current frame hit-tests at, null when the mouse isn't over the scene.
 	Point hitPos;
-	// Game mouse positions, oldest first, newest equal to hitPos. Stepped once per game cycle:
-	// a cycle that moved adds a dot, one that didn't drops the oldest, so a still mouse drains it.
+	// Game mouse positions, oldest first. Stepped once per game cycle: a cycle that moved adds a
+	// dot, one that didn't drops the oldest, so a still mouse drains it completely.
 	final Deque<Dot> trail = new ArrayDeque<>();
 	private int lastCycle = -1;
 
@@ -82,6 +82,7 @@ public class HoverLagPlugin extends Plugin
 			return;
 		}
 
+		Point prev = hitPos;
 		hitPos = new Point(walk.x + client.getViewportXOffset(), walk.y + client.getViewportYOffset());
 
 		// Frames drawn between cycles reuse the same mouse copy; only a new cycle can move it.
@@ -91,7 +92,7 @@ public class HoverLagPlugin extends Plugin
 			return;
 		}
 		lastCycle = cycle;
-		if (trail.isEmpty() || !hitPos.equals(trail.peekLast().pos))
+		if (!hitPos.equals(prev))
 		{
 			trail.addLast(new Dot(hitPos));
 			while (trail.size() > config.trailLength())
@@ -99,9 +100,9 @@ public class HoverLagPlugin extends Plugin
 				trail.removeFirst();
 			}
 		}
-		else if (trail.size() > 1)
+		else
 		{
-			trail.removeFirst();
+			trail.pollFirst();
 		}
 	}
 

@@ -28,6 +28,9 @@ class HoverLagOverlay extends Overlay
 	private static final Color IN_SYNC = new Color(0, 255, 0, 200);
 	private static final Color SCUFFED = new Color(255, 0, 0, 230);
 	private static final int RING = 6;
+	// The client's NPC clickbox reaches a few pixels past the model's convex hull, so a click that
+	// close to the hull still lands on the NPC.
+	private static final int CLICKBOX_SLACK = 6;
 
 	private final HoverLagPlugin plugin;
 	private final Client client;
@@ -98,25 +101,27 @@ class HoverLagOverlay extends Overlay
 		NPC aimed = top.getNpc();
 		if (aimed != null)
 		{
-			return !under(aimed, mouse);
+			Shape hull = aimed.getConvexHull();
+			return hull != null && !hull.intersects(mouse.x - CLICKBOX_SLACK, mouse.y - CLICKBOX_SLACK,
+				CLICKBOX_SLACK * 2, CLICKBOX_SLACK * 2);
 		}
 		if (top.getType() == MenuAction.WALK)
 		{
 			for (NPC npc : client.getTopLevelWorldView().npcs())
 			{
+				// Dying NPCs keep their model but offer no options, so walking is right there.
 				NPCComposition comp = npc.getTransformedComposition();
-				if (comp != null && comp.isInteractible() && under(npc, mouse))
+				if (comp == null || !comp.isInteractible() || npc.isDead())
+				{
+					continue;
+				}
+				Shape hull = npc.getConvexHull();
+				if (hull != null && hull.contains(mouse))
 				{
 					return true;
 				}
 			}
 		}
 		return false;
-	}
-
-	private static boolean under(NPC npc, Point mouse)
-	{
-		Shape hull = npc.getConvexHull();
-		return hull != null && hull.contains(mouse);
 	}
 }
