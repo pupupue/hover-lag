@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = 'https://repo.runelite.net'
+    }
+    mavenCentral()
+}
+
+def runeLiteVersion = 'latest.release'
+dependencies {
+    compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+    testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
+}
+
+group = 'com.hoverlag'
+version = '1.0'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.release.set(11)
+}
+
+// Launches RuneLite with Hover Lag already loaded.
+//   ./gradlew run
+//   ./gradlew run -Pargs="--developer-mode"
+tasks.register('run', JavaExec) {
+    group = 'application'
+    description = 'Launch RuneLite with the Hover Lag plugin loaded'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.hoverlag.HoverLagTest'
+    // ExternalPluginManager.loadBuiltin refuses to run without assertions enabled.
+    // ...but the GPU plugin's z-sort assert kills the dev client on models the
+    // launcher client, which ships without -ea, renders fine. Exempt it.
+    jvmArgs '-ea', '-da:net.runelite.client.plugins.gpu...'
+    if (project.hasProperty('args')) {
+        args project.property('args').toString().split('\s+')
+    }
+}
