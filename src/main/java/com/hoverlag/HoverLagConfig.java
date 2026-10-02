@@ -19,7 +19,7 @@ public interface HoverLagConfig extends Config
 		return false;
 	}
 
-	@Range(min = 5, max = 10)
+	@Range(min = 0, max = 10)
 	@ConfigItem(
 		keyName = "trailLength",
 		name = "Dots",
@@ -28,6 +28,6 @@ public interface HoverLagConfig extends Config
 	)
 	default int trailLength()
 	{
-		return 5;
+		return 4;
 	}
 }

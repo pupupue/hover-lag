@@ -19,4 +19,4 @@ It only draws; it never changes, delays or sends any clicks.
 ## Settings
 
 - **Show ring** (off by default): a ring at the game's current mouse position, green or red the same way.
-- **Dots** (5-10, default 5): how many of the game's recent mouse positions to show.
+- **Dots** (0-10, default 4): how many of the game's recent mouse positions to show.
